@@ -150,6 +150,32 @@ body.no-scroll{overflow:hidden}
 .study-content .freq-summary{background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin:12px 0;font-size:12px;line-height:1.8}
 .study-content .freq-summary strong{color:var(--accent)}
 
+
+/* Feynman output panel */
+.feynman-panel{background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:16px;margin:12px 0}
+.feynman-panel h3{font-size:14px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.feynman-panel .feynman-hint{font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6}
+.feynman-panel textarea{width:100%;min-height:100px;padding:10px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font);font-size:13px;line-height:1.7;resize:vertical}
+.feynman-result{margin-top:10px;padding:10px;border-radius:var(--radius);font-size:12px;line-height:1.6}
+.feynman-result.pass{background:var(--green-dim);border:1px solid #a7f3d0}
+.feynman-result.fail{background:var(--amber-dim);border:1px solid #fde68a}
+.feynman-btn-bar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.feynman-btn{height:34px;padding:0 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);cursor:pointer;font-size:12px;font-weight:600;transition:all .12s}
+.feynman-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.feynman-btn:hover{opacity:.85}
+
+/* Spaced repetition */
+.review-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin:6px 0;display:flex;align-items:center;gap:10px;font-size:13px}
+.review-card.due{background:#fef2f2;border-color:#fecaca}
+.review-card .review-badge{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600;white-space:nowrap}
+.review-badge.due{background:var(--red-dim);color:var(--red)}
+.review-badge.today{background:var(--amber-dim);color:var(--amber)}
+.review-badge.ok{background:var(--green-dim);color:var(--green)}
+
+/* BD anchor callout */
+.bd-anchor{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #a7f3d0;border-radius:var(--radius);padding:10px 14px;margin:10px 0;font-size:12px;line-height:1.7}
+.bd-anchor strong{color:var(--green)}
+
 </style>
 </head>
 <body>
@@ -617,6 +643,132 @@ function renderProgress() {
     hl.innerHTML = hh;
   }
 }
+
+
+// ============ FEYNMAN KEY POINTS ============
+var FEYNMAN_KP = {
+  "p1":["字节本地生活","入驻不等于经营","中小商户缺团队","连锁商户难批量","人工无法规模化","非结构化任务","结构化参数","AI适合处理","B端营销经营辅助","不是图片生成器","需求理解","经营策略","内容生产","质量审核","数据复盘"],
+  "p2":["商务经理","业务需求发起人","AI产品方案负责人","试点推动者","四层结构","业务端工作","产品端工作","AI专项工作","项目推进","项目真实性","个人贡献","产品判断","推动力","诚实边界","关键决策"],
+  "p3":["需求诊断","结构化表单","多模态识别","竞品分析","价格带","套餐结构","用户评价","内容表达","三档套餐","引流款","主推款","利润款","定价原则","不交大模型","菜品真实性","食材变化","风格漂移","5类方案","三层Prompt","3版样片","审核模块","三级审核","数据复盘"],
+  "p4":["生产效率","30到10","5轮降到2-3轮","内容质量","40%到85%","经营效率","5天到36小时","转化19%","组织复用","SOP","50人","四个不足","数据口径","归因问题","综合方案","A/B测试"],
+  "p5":["关注生成","转向任务完成","Prompt不是唯一","输入质量","流程确认","AI规则人工","MVP聚焦","需求诊断","内容生成","质量审核","数据归因","版本绑定","最大踩坑","重做三个功能","行业迁移","RAG","Agent"],
+  "r1":["创业经营","商业验证","人力流程","标准化","数据管理","用户场景","B端商户方案","字节本地生活","AI产品方案","能力成长","不是包装","能力补充"],
+  "r2":["朱耀龙","AI产品经理","B端需求理解","流程产品化","AI方案落地","4年创业","字节本地生活","餐饮AI助手","三层提示词","核心数据","核心竞争力","最大短板","传统PM"],
+  "r3":["真实客户需求","共性问题抽象","产品化","能力升级","不说上限低","不否定过去","不只说感兴趣","不对立"],
+  "r4":["业务场景","典型问题","观察到行动","Prompt设计","内容评测","效率质量业务","流程设计","套餐策略","内部推广","50人团队","保留人工空间"],
+  "r5":["全量数据","社交平台","10余条","1000用户","50余家","150万","拓浦","40%","30%","创业","1.5万","5万","四个不足"]
+};
+
+var currentFeynmanSection = null;
+
+function openFeynman(sectionId) {
+  currentFeynmanSection = sectionId;
+  document.getElementById("feynman-panel").style.display = "block";
+  document.getElementById("feynman-input").value = "";
+  document.getElementById("feynman-result").innerHTML = "";
+  document.getElementById("feynman-input").focus();
+  // Scroll to feynman panel
+  window.scrollTo({top: document.getElementById("feynman-panel").offsetTop - 60, behavior: "smooth"});
+}
+
+function closeFeynman() {
+  document.getElementById("feynman-panel").style.display = "none";
+  currentFeynmanSection = null;
+}
+
+function checkFeynman() {
+  if (!currentFeynmanSection) return;
+  var input = document.getElementById("feynman-input").value.trim();
+  if (!input) { alert("先写点东西再检查！"); return; }
+  
+  var kp = FEYNMAN_KP[currentFeynmanSection];
+  if (!kp) { document.getElementById("feynman-result").innerHTML = '<div class="feynman-result fail">该板块暂未配置费曼检查要点</div>'; return; }
+  
+  var answer = input.toLowerCase();
+  var matched = [], missed = [];
+  for (var i = 0; i < kp.length; i++) {
+    if (answer.indexOf(kp[i].toLowerCase()) !== -1) matched.push(kp[i]);
+    else missed.push(kp[i]);
+  }
+  var rate = Math.round(matched.length / kp.length * 100);
+  var cls = rate >= 70 ? "pass" : "fail";
+  var emoji = rate >= 80 ? "🎉" : rate >= 60 ? "💪" : "📖";
+  
+  var resultDiv = document.getElementById("feynman-result");
+  resultDiv.innerHTML = '<div class="feynman-result '+cls+'">' +
+    '<strong>'+emoji+' 覆盖率：'+rate+'%</strong> （'+matched.length+'/'+kp.length+' 个关键点）<br>' +
+    (matched.length ? '<span style="color:var(--green)">✅ 讲到的：'+matched.join('、')+'</span><br>' : '') +
+    (missed.length ? '<span style="color:var(--red)">❌ 遗漏的：'+missed.join('、')+'</span>' : '') +
+    '<br><small style="color:var(--sub)">'+(rate>=80?'讲得很好！可以进入下一板块。':rate>=60?'大部分关键点覆盖了，回顾遗漏的几个再讲一遍。':'遗漏较多，建议重新精读原文后再来一次费曼输出。')+'</small>' +
+    '</div>';
+}
+
+// ============ SPACED REPETITION ============
+var SPACED_INTERVALS = [1, 3, 7, 14, 30]; // days
+
+function getReviewStatus(sectionId) {
+  var p = gp();
+  var record = p[sectionId];
+  if (!record) return null;
+  var lastReview = record.ts;
+  var daysSince = Math.floor((Date.now() - lastReview) / (1000 * 60 * 60 * 24));
+  var reviewCount = record.reviewCount || 0;
+  var nextInterval = SPACED_INTERVALS[Math.min(reviewCount, SPACED_INTERVALS.length - 1)];
+  var daysUntilDue = nextInterval - daysSince;
+  return {daysSince: daysSince, reviewCount: reviewCount, nextInterval: nextInterval, daysUntilDue: daysUntilDue, avg: record.avg};
+}
+
+// Override sdr to track review count
+var _origSdr = sdr;
+sdr = function(sec, r) {
+  var old = gdr(sec);
+  r.reviewCount = (old && old.reviewCount ? old.reviewCount + 1 : 1);
+  _origSdr(sec, r);
+};
+
+// Add function to render reminders
+function renderReviewReminders() {
+  var sections = Object.keys(QUIZ_DATA);
+  var reminders = [];
+  for (var i = 0; i < sections.length; i++) {
+    var s = sections[i];
+    var status = getReviewStatus(s);
+    if (status) {
+      reminders.push({section: s, title: QUIZ_DATA[s].title, status: status});
+    }
+  }
+  
+  var container = document.getElementById("review-reminders");
+  if (!reminders.length) {
+    container.innerHTML = '<div class="empty">暂无复习数据，完成板块自检后自动生成复习计划</div>';
+    return;
+  }
+  
+  // Sort: most overdue first
+  reminders.sort(function(a, b) { return a.status.daysUntilDue - b.status.daysUntilDue; });
+  
+  var h = '';
+  reminders.forEach(function(r) {
+    var due = r.status.daysUntilDue <= 0;
+    var today = r.status.daysUntilDue === 0;
+    var badgeCls = due ? "due" : (today ? "today" : "ok");
+    var badgeText = due ? "⚠ 待复习" : (r.status.daysUntilDue <= 1 ? "今天复习" : r.status.daysUntilDue + "天后复习");
+    var cardCls = due ? "review-card due" : "review-card";
+    h += '<div class="'+cardCls+'" onclick="switchPanel(\'quiz\');csection=\''+r.section+'\';renderSectionPills();loadSectionQuiz(\''+r.section+'\')">';
+    h += '<span class="review-badge '+badgeCls+'">'+badgeText+'</span>';
+    h += '<span style="flex:1">'+r.title+'</span>';
+    h += '<span style="font-size:11px;color:var(--sub)">'+r.status.daysSince+'天前 · 得分'+r.status.avg.toFixed(1)+'/5</span>';
+    h += '</div>';
+  });
+  container.innerHTML = h;
+}
+
+// Hook into renderProgress to also render reminders
+var _origRenderProgress = renderProgress;
+renderProgress = function() {
+  _origRenderProgress();
+  renderReviewReminders();
+};
 
 // ============ INIT ============
 switchPanel('study');
