@@ -537,7 +537,12 @@ function renderSectionPills() {
     var cls = 'section-pill';
     if (s === csection) cls += ' active';
     if (r && r.avg >= 3) cls += ' done';
-    var label = QUIZ_DATA[s].title.length > 12 ? QUIZ_DATA[s].title.substring(0,12)+'..' : QUIZ_DATA[s].title;
+    var numberMap = {"p1":"一","p2":"二","p3":"三","p4":"四","p5":"五","p6":"六","p7":"七","r1":"一","r2":"二","r3":"三","r4":"四","r5":"五","q1":"A1","q2":"A2","q3":"A3"};
+  var typeMap = {"p":"产品","r":"简历","q":"速查"};
+  var num = numberMap[s] || "";
+  var type = typeMap[s[0]] || "";
+  var title = QUIZ_DATA[s].title;
+  var label = type + num + "：" + (title.length > 18 ? title.substring(0,18)+".." : title);
     h += '<button class="'+cls+'" onclick="csection=\''+s+'\';renderSectionPills();loadSectionQuiz(\''+s+'\')">'+label+'</button>';
   }
   pills.innerHTML = h;
@@ -551,7 +556,8 @@ function loadSectionQuiz(section) {
   var body = document.getElementById('quiz-body');
   var pr = gdr(section);
   var h = '<h3 style="font-size:15px;font-weight:600;margin-bottom:4px;">'+data.title+'</h3>';
-  h += '<p style="font-size:12px;color:var(--sub);margin-bottom:10px;">共 '+data.questions.length+' 题</p>';
+  var mappingMap = {"p1":"产品逐字稿 → 一、产品背景","p2":"产品逐字稿 → 二、你的角色与职责","p3":"产品逐字稿 → 三、产品核心功能","p4":"产品逐字稿 → 四、业务成果","p5":"产品逐字稿 → 五、反思与经验","p6":"产品逐字稿 → 六、2-3分钟简版","p7":"产品逐字稿 → 七、5-7分钟完整版","r1":"简历逐字稿 → 一、职业主线","r2":"简历逐字稿 → 二、自我介绍","r3":"简历逐字稿 → 三、转型逻辑","r4":"简历逐字稿 → 四、字节经历","r5":"简历逐字稿 → 五、业务结果","q1":"辅助速查 → Agent与工具调用","q2":"辅助速查 → RAG与企业知识库","q3":"辅助速查 → 需求文档重点"};
+  h += '<p style="font-size:12px;color:var(--sub);margin-bottom:4px;">共 '+data.questions.length+' 题 · <span style="color:var(--accent)">'+(mappingMap[section]||"")+'</span></p>';
   if (pr) {
     var cls = pr.avg >= 3 ? 'pass' : 'fail';
     h += '<div class="feedback-item '+cls+'" style="margin-bottom:10px;">上次：'+new Date(pr.ts).toLocaleString('zh-CN')+' | <strong>'+pr.rate+'%</strong> | '+pr.avg.toFixed(1)+'/5'+(pr.avg<3?' | 建议重做':'')+'</div>';
