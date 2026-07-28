@@ -176,12 +176,30 @@ body.no-scroll{overflow:hidden}
 .bd-anchor{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #a7f3d0;border-radius:var(--radius);padding:10px 14px;margin:10px 0;font-size:12px;line-height:1.7}
 .bd-anchor strong{color:var(--green)}
 
+
+/* Font size controls */
+.font-ctrl{display:flex;align-items:center;gap:4px;margin-right:8px}
+.font-ctrl button{width:28px;height:28px;border:1px solid var(--border);border-radius:4px;background:var(--surface);cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .12s;color:var(--text)}
+.font-ctrl button:hover{background:#f1f5f9}
+.font-ctrl .fs-label{font-size:11px;color:var(--sub);width:28px;text-align:center;font-weight:600}
+
+/* Voice recording */
+.voice-btn{width:32px;height:32px;border:1px solid var(--border);border-radius:50%;background:var(--surface);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0;margin-left:8px;vertical-align:middle}
+.voice-btn:hover{background:#f1f5f9}
+.voice-btn.recording{background:var(--red-dim);border-color:var(--red);animation:pulse 1.5s infinite}
+.voice-btn.recording svg{stroke:var(--red)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
+.voice-status{font-size:11px;color:var(--red);margin-left:4px;display:none}
+.voice-status.active{display:inline;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.4}}
+
 </style>
 </head>
 <body>
 <div class="app">
 <header class="topbar">
   <span class="topbar-brand">AI PM 面试训练</span>
+    <div class="font-ctrl"><button onclick="changeFontSize(-1)" title="缩小字体">A-</button><span class="fs-label" id="fs-label">14</span><button onclick="changeFontSize(1)" title="放大字体">A+</button></div>
   <nav class="topbar-nav">
     <button id="nav-study" class="active" onclick="switchPanel('study')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
@@ -770,6 +788,171 @@ var _origRenderProgress = renderProgress;
 renderProgress = function() {
   _origRenderProgress();
   renderReviewReminders();
+};
+
+
+// ============ FONT SIZE CONTROL ============
+var currentFontSize = parseInt(localStorage.getItem("app_font_size") || "14");
+function applyFontSize(size) {
+  document.documentElement.style.fontSize = size + "px";
+  localStorage.setItem("app_font_size", size);
+  document.getElementById("fs-label").textContent = size;
+}
+function changeFontSize(delta) {
+  currentFontSize = Math.max(12, Math.min(20, currentFontSize + delta));
+  applyFontSize(currentFontSize);
+}
+applyFontSize(currentFontSize);
+
+// ============ VOICE INPUT (Web Speech API) ============
+var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+var voiceSupported = !!SpeechRecognition;
+var currentRecognition = null;
+var currentVoiceTarget = null;
+
+function isVoiceSupported() {
+  if (!voiceSupported) {
+    alert("你的浏览器不支持语音输入。请使用 Chrome 或 Safari 打开此页面。");
+    return false;
+  }
+  return true;
+}
+
+function startVoice(targetId) {
+  if (!isVoiceSupported()) return;
+  
+  // Stop any existing recognition
+  if (currentRecognition) {
+    currentRecognition.stop();
+  }
+  
+  var recognition = new SpeechRecognition();
+  recognition.lang = "zh-CN";
+  recognition.interimResults = true;
+  recognition.continuous = true;
+  recognition.maxAlternatives = 1;
+  
+  var target = document.getElementById(targetId);
+  var btn = document.getElementById("vbtn_" + targetId);
+  if (!target || !btn) return;
+  
+  currentRecognition = recognition;
+  currentVoiceTarget = targetId;
+  
+  btn.classList.add("recording");
+  
+  recognition.onresult = function(event) {
+    var transcript = "";
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    // Append to existing text
+    if (event.results[event.results.length - 1].isFinal) {
+      target.value = (target.value ? target.value + " " : "") + transcript;
+    } else {
+      // Show interim result by temporarily adding it
+      var existing = target.value;
+      target.value = existing + transcript;
+      target.setSelectionRange(existing.length, existing.length + transcript.length);
+    }
+  };
+  
+  recognition.onerror = function(event) {
+    console.log("Voice error:", event.error);
+    btn.classList.remove("recording");
+    currentRecognition = null;
+    currentVoiceTarget = null;
+    
+    if (event.error === "not-allowed") {
+      alert("麦克风权限被拒绝。请在浏览器设置中允许麦克风访问。");
+    } else if (event.error === "no-speech") {
+      // Silent - just stop
+    } else if (event.error !== "aborted") {
+      alert("语音识别出错: " + event.error + "。请重试或使用键盘输入。");
+    }
+  };
+  
+  recognition.onend = function() {
+    btn.classList.remove("recording");
+    currentRecognition = null;
+    currentVoiceTarget = null;
+  };
+  
+  try {
+    recognition.start();
+  } catch(e) {
+    btn.classList.remove("recording");
+    alert("语音启动失败: " + e.message);
+  }
+}
+
+function stopVoice() {
+  if (currentRecognition) {
+    currentRecognition.stop();
+    currentRecognition = null;
+    if (currentVoiceTarget) {
+      var btn = document.getElementById("vbtn_" + currentVoiceTarget);
+      if (btn) btn.classList.remove("recording");
+      currentVoiceTarget = null;
+    }
+  }
+}
+
+// Modify quiz rendering to add voice buttons
+var _origLoadSectionQuiz = loadSectionQuiz;
+loadSectionQuiz = function(section) {
+  _origLoadSectionQuiz(section);
+  // Add voice buttons after each textarea
+  setTimeout(function() {
+    var textareas = document.querySelectorAll("#quiz-body textarea");
+    textareas.forEach(function(ta) {
+      var id = ta.id;
+      if (!document.getElementById("vbtn_" + id)) {
+        var btn = document.createElement("button");
+        btn.id = "vbtn_" + id;
+        btn.className = "voice-btn";
+        btn.title = "语音输入（点击开始，再点停止）";
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+        btn.onclick = function(e) {
+          e.preventDefault();
+          if (this.classList.contains("recording")) {
+            stopVoice();
+          } else {
+            startVoice(id);
+          }
+        };
+        ta.parentNode.appendChild(btn);
+      }
+    });
+  }, 100);
+};
+
+// Also add voice to retry mode
+var _origRetrySection = retrySection;
+retrySection = function(section) {
+  _origRetrySection(section);
+  setTimeout(function() {
+    var textareas = document.querySelectorAll("#quiz-body textarea");
+    textareas.forEach(function(ta) {
+      var id = ta.id;
+      if (!document.getElementById("vbtn_" + id)) {
+        var btn = document.createElement("button");
+        btn.id = "vbtn_" + id;
+        btn.className = "voice-btn";
+        btn.title = "语音输入（点击开始，再点停止）";
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+        btn.onclick = function(e) {
+          e.preventDefault();
+          if (this.classList.contains("recording")) {
+            stopVoice();
+          } else {
+            startVoice(id);
+          }
+        };
+        ta.parentNode.appendChild(btn);
+      }
+    });
+  }, 100);
 };
 
 // ============ INIT ============
