@@ -211,6 +211,24 @@ body.no-scroll{overflow:hidden}
 .smart-review-card h3{font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 .tag-sprint{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;background:#1e40af;color:#fff}
 
+
+/* Flashcard mode */
+.flashcard-container{perspective:1000px;width:100%;max-width:600px;margin:0 auto;min-height:200px}
+.flashcard{position:relative;width:100%;min-height:180px;cursor:pointer;transition:transform .4s;transform-style:preserve-3d}
+.flashcard.flipped{transform:rotateY(180deg)}
+.flashcard-face{position:absolute;width:100%;min-height:180px;backface-visibility:hidden;border-radius:var(--radius);padding:24px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:15px;line-height:1.7;border:2px solid var(--border)}
+.flashcard-front{background:var(--surface);z-index:2}
+.flashcard-back{background:var(--accent-dim);transform:rotateY(180deg);border-color:var(--accent)}
+.flashcard-counter{text-align:center;font-size:12px;color:var(--sub);margin:8px 0}
+.flashcard-btns{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.flashcard-rate{height:38px;padding:0 16px;border:none;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:600;transition:all .12s}
+.flashcard-rate.easy{background:var(--green-dim);color:var(--green)}.flashcard-rate.easy:hover{background:#a7f3d0}
+.flashcard-rate.medium{background:var(--amber-dim);color:var(--amber)}.flashcard-rate.medium:hover{background:#fde68a}
+.flashcard-rate.hard{background:var(--red-dim);color:var(--red)}.flashcard-rate.hard:hover{background:#fecaca}
+.flashcard-progress{display:flex;gap:4px;justify-content:center;margin:8px 0;flex-wrap:wrap}
+.flashcard-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .2s}
+.flashcard-dot.done{background:var(--green)}.flashcard-dot.current{background:var(--accent);transform:scale(1.4)}
+
 </style>
 </head>
 <body>
@@ -1246,6 +1264,212 @@ var _origSwitchPanel2 = switchPanel;
 switchPanel = function(name) {
   _origSwitchPanel2(name);
   if (name === "sprint") renderSprintDashboard();
+};
+
+
+// ============ FLASHCARD SYSTEM ============
+var FLASHCARD_DECK = [
+  {q:"产品背景的6步递进结构是什么？",a:"业务场景真实存在 → 商户入驻后仍不会经营 → 中小商户缺团队，连锁商户难批量 → 人工服务成本高且无法复制 → AI适合处理理解、分析和生成 → 产品定位为经营策略与内容生产一体化助手",cat:"product"},
+  {q:"产品定位一句话怎么说？",a:"面向内部商务、运营及餐饮商户的B端AI营销经营辅助产品，不是单一图片生成器",cat:"product"},
+  {q:"三层Prompt分别是哪三层？",a:"第一层（业务场景）：菜品类型、目标用户、使用场景；第二层（视觉风格）：色调、构图、光线、餐具；第三层（真实性约束）：核心食材、分量、烹饪状态、禁止元素",cat:"product"},
+  {q:"为什么是3版风格样片不是1版或5版？",a:"1版太少选择不够，5版太多选择困难，3版恰好展示风格差异。确认后统一继承风格基准防止漂移",cat:"product"},
+  {q:"套餐设计为什么不让大模型直接定价格？",a:"价格涉及商户成本和利润，模型可能忽略成本给出不合理建议。菜品原价、成本、折扣通过结构化规则测算，大模型只负责套餐定位、市场差异和卖点表达。无成本数据时只给市场参考区间不做利润承诺",cat:"product"},
+  {q:"三档套餐分别是什么？各有何作用？",a:"引流款：新客转化和销量增长；主推款：覆盖主流消费场景；利润款：提升客单价和收益",cat:"product"},
+  {q:"四层业务成果是什么？关键数据？",a:"生产效率：30min→10min，5轮→2-3轮；内容质量：40%→85%；经营效率：5天→36小时，转化+19%；组织复用：SOP，约50人团队",cat:"product"},
+  {q:"五个核心反思是什么？",a:"①从关注生成转向任务完成 ②Prompt不是唯一答案 ③AI+规则+人工协同 ④MVP可更聚焦 ⑤数据归因需加强（A/B测试+版本绑定）",cat:"product"},
+  {q:"19%转化提升怎么归因？",a:"19%是套餐和视觉同步优化后的综合方案结果，不能做单因素归因。同期可能有达人、直播、投流变化。应在第一天建立版本绑定和A/B测试",cat:"product"},
+  {q:"为什么不直接Agent？",a:"项目早期流程明确（需求采集→分析→生成→审核），各有固定依赖，用可控工作流更合适。MVP阶段引入自主Agent会增加不可控性。后续处理更复杂经营目标时可考虑",cat:"product"},
+  {q:"为什么不直接RAG？",a:"MVP阶段主要信息是商户资料、品牌规则、套餐和少量模板，直接通过结构化数据和模板调用就能满足。后续行业案例和品牌文档规模扩大后可考虑",cat:"product"},
+  {q:"你的正式岗位是什么？项目角色是什么？",a:"正式岗位：本地生活商务经理。项目角色：业务需求发起人 + AI产品方案负责人 + 试点推动者",cat:"resume"},
+  {q:"职业主线怎么统一四段经历？",a:"创业（商业闭环+结果意识）→ 人事（流程标准化+数据化）→ 社交平台（用户洞察+B端方案）→ 字节（把这些能力升级为AI产品）。不是转行，是在同一条能力线上补充新维度",cat:"resume"},
+  {q:"核心竞争力一句话怎么说？",a:"既能深入理解B端客户的真实业务诉求，也能将这些模糊需求转化为结构化的AI产品流程、Prompt方案和质量标准，并推动方案在真实业务中完成验证",cat:"resume"},
+  {q:"最大短板怎么回答？",a:"相比长期在研发团队中成长的产品经理，我在复杂技术系统和完整研发管理上的经验还需要继续积累。但业务理解和落地比较强。正在补充大模型基础、工作流设计、RAG、模型评测。目标不是代替算法，而是准确判断技术适用性",cat:"resume"},
+  {q:"为什么从商务转AI产品？",a:"商务经历积累了真实客户需求 → 从单客户交付走向共性问题抽象 → 餐饮AI项目确认更适合产品化解决问题 → 转型是原有能力的升级不是推翻过去。四条红线：不说上限低、不否定过去、不只说感兴趣、不制造对立",cat:"resume"},
+  {q:"你最关键的产品决策是什么？",a:"先做内部运营人员使用的MVP，不是直接做商户自助平台。早期AI结果仍有菜品失真、风格不稳定和事实错误风险，通过运营人员先使用可快速验证效果并保留人工审核",cat:"resume"},
+  {q:"怎么证明不是只会写Prompt？",a:"Prompt只是方案的一部分。我还做了用户分析、业务流程、功能设计、数据规则、质量评测、人工审核和产品运营。套餐定价不能靠Prompt解决，需要结构化数据。重点是让AI完成真实业务任务而不是只优化一次模型回答",cat:"resume"},
+  {q:"全量关键数据默写",a:"产品：30→10min, 5→2-3轮, 40%→85%, 5天→36h, +19%, 约50人。社交平台：10余条线路, 1000+用户/周, 50余家商户, 150万流水。拓浦：效率+40%, 风险-30%。创业：1.5万→5万",cat:"resume"},
+  {q:"AI产品能力的四个层次？你的项目在哪层？",a:"第一层内容生成→第二层知识问答→第三层辅助执行（你的项目在这层）→第四层自主执行。层次越高不代表产品越好",cat:"concept"},
+  {q:"API/Function Calling/MCP/RPA的区别？",a:"API：系统标准接口（最稳定）；FC：模型以结构化方式选择工具生成参数；MCP：标准连接协议（降低适配成本）；RPA：模拟用户点击（稳定性差，最后手段）",cat:"concept"},
+  {q:"Prompt和RAG分别解决什么问题？",a:"Prompt决定「怎么答」（格式、语气、要求）；RAG提供「答什么」（企业真实资料）。没有真实资料，再好的Prompt也无法产生正确答案",cat:"concept"},
+  {q:"确定性任务/模糊理解/高风险决策各交给谁？",a:"确定性任务→程序；模糊理解→模型；高风险决策→人。这是AI产品设计的核心原则",cat:"concept"},
+  {q:"AI产品PRD比传统PRD多哪些内容？",a:"AI能力边界、知识和数据来源、Prompt规则、模型选择原则、工作流/Agent逻辑、工具调用、人工确认点、异常降级策略、评测指标、成本要求、安全要求、版本规划",cat:"concept"},
+  {q:"分层评测的五层是什么？",a:"数据/知识层→模型能力层→RAG/检索层→Agent层→业务价值层。技术指标良好不代表产品有价值",cat:"concept"},
+  {q:"MVP的核心原则是什么？",a:"不是功能越少越好，而是用最小范围验证完整价值闭环。例如企业知识助手：提问→找到知识→生成有来源答案→解决问题→反馈进入优化",cat:"concept"},
+  {q:"面试官最爱问的10个问题按频率排序？",a:"①为什么做这个产品 ②商务经理怎么做AI产品 ③最大挑战怎么解决 ④数据成果是什么 ⑤学到了什么不足 ⑥为什么不让大模型定价 ⑦怎么证明不是只会Prompt ⑧竞品数据怎么获得 ⑨为什么不Agent/RAG ⑩方法能迁移吗",cat:"product"},
+  {q:"四个不足分别是什么？",a:"①试点商户数量有限，方向验证非大规模统计 ②竞品数据主要人工整理 ③质检以人工为主 ④19%为综合结果，不能单因素归因",cat:"product"},
+  {q:"如果重做一次优先做哪三个功能？",a:"①结构化需求诊断（保证正确输入）②品牌和真实性约束下的内容生成（最高频工作）③质量审核（保证安全交付）",cat:"product"},
+  {q:"菜品还原率40%为什么这么低？",a:"初期使用通用生成方式，视觉效果不错但没有真实菜品和食材约束。餐饮验收标准比普通美图严格，核心食材/分量/烹饪状态出现明显错误就不能算合格",cat:"product"},
+];
+
+var FC_KEY = 'ai_pm_flashcards';
+function getFC() {
+  try { return JSON.parse(localStorage.getItem(FC_KEY) || '{"ratings":{},"current":0,"history":[]}'); } catch(e) { return {ratings:{},current:0,history:[]}; }
+}
+function saveFC(d) { localStorage.setItem(FC_KEY, JSON.stringify(d)); }
+
+var fcData = getFC();
+var fcFlipped = false;
+
+function getNextCard() {
+  var ratings = fcData.ratings;
+  // Cards rated 1 (hard) appear 3x more often, rated 2 appear 2x, rated 3 appear 1x
+  var weighted = [];
+  FLASHCARD_DECK.forEach(function(card, i) {
+    var r = ratings[i] || 0;
+    var weight = r === 0 ? 4 : r === 1 ? 3 : r === 2 ? 2 : 1;
+    for (var j = 0; j < weight; j++) weighted.push(i);
+  });
+  // Shuffle
+  for (var i = weighted.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = weighted[i]; weighted[i] = weighted[j]; weighted[j] = tmp;
+  }
+  // Don't repeat same card twice in a row
+  var pick = weighted[0];
+  if (pick === fcData.current && weighted.length > 1) pick = weighted[1];
+  return pick;
+}
+
+function showFlashcard() {
+  var idx = getNextCard();
+  fcData.current = idx;
+  saveFC(fcData);
+  
+  var card = FLASHCARD_DECK[idx];
+  document.getElementById("fc-front").textContent = card.q;
+  document.getElementById("fc-back").textContent = card.a;
+  document.getElementById("fc-card").classList.remove("flipped");
+  document.getElementById("fc-btns").style.display = "none";
+  fcFlipped = false;
+  
+  // Update counter
+  var rated = Object.keys(fcData.ratings).length;
+  document.getElementById("fc-counter").textContent = "已评 " + rated + " / " + FLASHCARD_DECK.length + " 张";
+  
+  // Update progress dots
+  var dots = "";
+  for (var i = 0; i < FLASHCARD_DECK.length; i++) {
+    var cls = "flashcard-dot";
+    if (i === idx) cls += " current";
+    else if (fcData.ratings[i]) cls += " done";
+    dots += '<span class="'+cls+'"></span>';
+  }
+  document.getElementById("fc-progress").innerHTML = dots;
+}
+
+function flipCard() {
+  fcFlipped = !fcFlipped;
+  if (fcFlipped) {
+    document.getElementById("fc-card").classList.add("flipped");
+    document.getElementById("fc-btns").style.display = "flex";
+  } else {
+    document.getElementById("fc-card").classList.remove("flipped");
+    document.getElementById("fc-btns").style.display = "none";
+  }
+}
+
+function rateCard(rating) {
+  fcData.ratings[fcData.current] = rating;
+  fcData.history.push({card: fcData.current, rating: rating, ts: Date.now()});
+  saveFC(fcData);
+  showFlashcard();
+}
+
+function resetFlashcards() {
+  if (confirm("确定重置所有闪卡进度？")) {
+    localStorage.removeItem(FC_KEY);
+    fcData = getFC();
+    showFlashcard();
+  }
+}
+
+// Add flashcard nav button
+document.addEventListener("DOMContentLoaded", function() {
+  var nav = document.querySelector(".topbar-nav");
+  if (nav && !document.getElementById("nav-flashcard")) {
+    var btn = document.createElement("button");
+    btn.id = "nav-flashcard";
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="nav-label">闪卡</span>';
+    btn.onclick = function() { switchPanel("flashcard"); showFlashcard(); };
+    nav.appendChild(btn);
+  }
+});
+
+// ============ DAILY RANDOM REVIEW ============
+function startRandomReview() {
+  var allQuestions = [];
+  Object.keys(QUIZ_DATA).forEach(function(s) {
+    QUIZ_DATA[s].questions.forEach(function(q, i) {
+      allQuestions.push({section:s, qi:i, q:q.q, kp:q.kp, title:QUIZ_DATA[s].title});
+    });
+  });
+  
+  // Shuffle and take 5
+  for (var i = allQuestions.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = allQuestions[i]; allQuestions[i] = allQuestions[j]; allQuestions[j] = tmp;
+  }
+  var picked = allQuestions.slice(0, 5);
+  
+  var body = document.getElementById("quiz-body");
+  var h = '<h3 style="font-size:16px;font-weight:600;margin-bottom:4px">🎲 随机混练</h3>';
+  h += '<p style="font-size:12px;color:var(--sub);margin-bottom:12px">从15个板块中随机抽取5题，打乱顺序，避免按板块记忆</p>';
+  picked.forEach(function(p, i) {
+    h += '<div class="quiz-card"><h3><span class="q-badge">'+(i+1)+'/5</span> <span style="font-size:11px;color:var(--sub)">'+p.title.substring(0,12)+'</span></h3>';
+    h += '<div class="q-text">'+p.q+'</div>';
+    h += '<textarea id="rr_'+i+'" placeholder="输入你的回答..."></textarea></div>';
+  });
+  h += '<button class="btn btn-primary" onclick="submitRandomReview('+JSON.stringify(picked.map(function(p){return {s:p.section, qi:p.qi};}))+')">提交混练</button>';
+  body.innerHTML = h;
+  document.getElementById("quiz-result").style.display = "none";
+  switchPanel("quiz");
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+function submitRandomReview(refs) {
+  var results = [];
+  var total = 0;
+  refs.forEach(function(ref, i) {
+    var ans = document.getElementById("rr_"+i).value.trim();
+    if (!ans) { results.push({score:0, matched:[], missed:['未作答']}); return; }
+    var data = QUIZ_DATA[ref.s];
+    var r = scoreAnswer(ans, data.questions[ref.qi].kp);
+    results.push(r);
+    total += r.score;
+  });
+  var avg = total / refs.length;
+  var rate = Math.round(avg * 20);
+  
+  var rc = document.getElementById("quiz-result");
+  var cls = avg >= 3.5 ? "good" : avg >= 2.5 ? "ok" : "bad";
+  var h = '<div class="result-header"><div class="result-score '+cls+'">'+rate+'%</div><div class="result-meta">随机混练 · '+avg.toFixed(1)+'/5 · '+refs.length+'题</div></div>';
+  h += '<div style="font-size:13px;color:var(--sub);margin-bottom:8px">打乱板块顺序的随机测试，检验真实掌握程度（非按板块记忆）</div>';
+  results.forEach(function(r, i) {
+    var fcls = r.score >= 3 ? "pass" : "fail";
+    h += '<div class="feedback-item '+fcls+'"><div class="fb-title">Q'+(i+1)+' 得分：<strong>'+r.score+'/5</strong></div>';
+    if (r.matched && r.matched.length) h += '<div class="caught">✅ '+r.matched.join('、')+'</div>';
+    if (r.missed && r.missed.length) h += '<div class="missed">❌ '+r.missed.join('、')+'</div>';
+    h += '</div>';
+  });
+  h += '<div style="margin-top:10px"><button class="btn btn-outline btn-sm" onclick="startRandomReview()">再抽5题</button></div>';
+  rc.innerHTML = h;
+  rc.style.display = "block";
+  window.scrollTo({top: rc.offsetTop - 60, behavior: "smooth"});
+}
+
+// Add random review button to sprint panel
+var _origRenderSprint = renderSprintDashboard;
+renderSprintDashboard = function() {
+  _origRenderSprint();
+  // Add random review button to sprint panel
+  var checklist = document.getElementById("sprint-checklist");
+  if (checklist && !document.getElementById("random-review-btn")) {
+    var div = document.createElement("div");
+    div.id = "random-review-btn";
+    div.style.cssText = "margin-top:12px;text-align:center";
+    div.innerHTML = '<button class="btn btn-primary btn-sm" onclick="startRandomReview()">🎲 随机混练（5题）</button>';
+    checklist.parentNode.appendChild(div);
+  }
 };
 
 // ============ INIT ============
