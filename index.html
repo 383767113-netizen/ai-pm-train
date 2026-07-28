@@ -1247,8 +1247,7 @@ function resetSprint() {
 }
 
 // Add sprint nav button
-document.addEventListener("DOMContentLoaded", function() {
-  // Add sprint nav button
+(function() {
   var nav = document.querySelector(".topbar-nav");
   if (nav && !document.getElementById("nav-sprint")) {
     var btn = document.createElement("button");
@@ -1257,7 +1256,7 @@ document.addEventListener("DOMContentLoaded", function() {
     btn.onclick = function() { switchPanel("sprint"); renderSprintDashboard(); };
     nav.appendChild(btn);
   }
-});
+})();
 
 // Hook switchPanel to render sprint
 var _origSwitchPanel2 = switchPanel;
@@ -1310,14 +1309,30 @@ function saveFC(d) { localStorage.setItem(FC_KEY, JSON.stringify(d)); }
 var fcData = getFC();
 var fcFlipped = false;
 
+var fcFilter = "all";
+function setFCFilter(cat) {
+  fcFilter = cat;
+  ["all","product","resume","concept"].forEach(function(c) {
+    var btn = document.getElementById("fc-filter-"+c);
+    if (btn) { btn.classList.remove("primary"); btn.classList.add(c === cat ? "primary" : ""); }
+  });
+  showFlashcard();
+}
 function getNextCard() {
   var ratings = fcData.ratings;
+  // Filter by category
+  var deck = FLASHCARD_DECK;
+  if (fcFilter !== "all") {
+    deck = FLASHCARD_DECK.filter(function(c) { return c.cat === fcFilter; });
+  }
   // Cards rated 1 (hard) appear 3x more often, rated 2 appear 2x, rated 3 appear 1x
   var weighted = [];
-  FLASHCARD_DECK.forEach(function(card, i) {
-    var r = ratings[i] || 0;
+  deck.forEach(function(card, deckIdx) {
+    // Find original index in FLASHCARD_DECK
+    var origIdx = FLASHCARD_DECK.indexOf(card);
+    var r = ratings[origIdx] || 0;
     var weight = r === 0 ? 4 : r === 1 ? 3 : r === 2 ? 2 : 1;
-    for (var j = 0; j < weight; j++) weighted.push(i);
+    for (var j = 0; j < weight; j++) weighted.push(origIdx);
   });
   // Shuffle
   for (var i = weighted.length - 1; i > 0; i--) {
@@ -1343,15 +1358,20 @@ function showFlashcard() {
   fcFlipped = false;
   
   // Update counter
-  var rated = Object.keys(fcData.ratings).length;
-  document.getElementById("fc-counter").textContent = "已评 " + rated + " / " + FLASHCARD_DECK.length + " 张";
+  var deck = fcFilter === "all" ? FLASHCARD_DECK : FLASHCARD_DECK.filter(function(c) { return c.cat === fcFilter; });
+  var ratedInFilter = 0;
+  deck.forEach(function(c) { if (fcData.ratings[FLASHCARD_DECK.indexOf(c)]) ratedInFilter++; });
+  var totalRated = Object.keys(fcData.ratings).length;
+  document.getElementById("fc-counter").textContent = "当前筛选：" + (fcFilter==="all"?"全部":fcFilter==="product"?"产品逐字稿":fcFilter==="resume"?"简历逐字稿":"概念速查") + " · 已评 " + ratedInFilter + " / " + deck.length + " 张（总计 " + totalRated + " / " + FLASHCARD_DECK.length + "）";
   
   // Update progress dots
+  var deck = fcFilter === "all" ? FLASHCARD_DECK : FLASHCARD_DECK.filter(function(c) { return c.cat === fcFilter; });
   var dots = "";
-  for (var i = 0; i < FLASHCARD_DECK.length; i++) {
+  for (var i = 0; i < deck.length; i++) {
+    var origIdx = FLASHCARD_DECK.indexOf(deck[i]);
     var cls = "flashcard-dot";
-    if (i === idx) cls += " current";
-    else if (fcData.ratings[i]) cls += " done";
+    if (origIdx === idx) cls += " current";
+    else if (fcData.ratings[origIdx]) cls += " done";
     dots += '<span class="'+cls+'"></span>';
   }
   document.getElementById("fc-progress").innerHTML = dots;
@@ -1384,7 +1404,7 @@ function resetFlashcards() {
 }
 
 // Add flashcard nav button
-document.addEventListener("DOMContentLoaded", function() {
+(function() {
   var nav = document.querySelector(".topbar-nav");
   if (nav && !document.getElementById("nav-flashcard")) {
     var btn = document.createElement("button");
@@ -1393,7 +1413,7 @@ document.addEventListener("DOMContentLoaded", function() {
     btn.onclick = function() { switchPanel("flashcard"); showFlashcard(); };
     nav.appendChild(btn);
   }
-});
+})();
 
 // ============ DAILY RANDOM REVIEW ============
 function startRandomReview() {
