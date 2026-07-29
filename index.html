@@ -229,6 +229,12 @@ body.no-scroll{overflow:hidden}
 .flashcard-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .2s}
 .flashcard-dot.done{background:var(--green)}.flashcard-dot.current{background:var(--accent);transform:scale(1.4)}
 
+
+.study-sidebar-toggle{display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fafbfc;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:8px;width:100%;justify-content:space-between}
+.study-sidebar-toggle:hover{background:#f1f5f9}
+.study-sidebar-toggle .arrow{transition:transform .2s;font-size:10px}
+.study-sidebar.collapsed{display:none}
+
 </style>
 </head>
 <body>
@@ -265,7 +271,8 @@ body.no-scroll{overflow:hidden}
     <button onclick="switchStudyTab('resume')">简历逐字稿</button>
     <button onclick="switchStudyTab('quick')">辅助速查</button>
   </div>
-  <div id="study-sidebar-mob" class="study-sidebar"></div>
+  <button class="study-sidebar-toggle" onclick="toggleSidebar()">📂 章节目录 <span class="arrow" id="sidebar-arrow">▼</span></button>
+      <div id="study-sidebar-mob" class="study-sidebar"></div>
   <div id="study-content" class="study-content">
     <div class="empty">从上方选择一个章节开始学习</div>
   </div>
@@ -342,7 +349,7 @@ const QUIZ_DATA = {
   "p1": {
     title: "一、产品背景：为什么做这个产品",
     questions: [
-      {q: "请完整讲述你为什么要做这个餐饮商户AI营销经营助手？按照6步递进结构回答。", kp: ["字节本地生活","商务经理","入驻不等于经营","中小商户缺团队","连锁商户难批量","人工服务无法规模化","非结构化任务","结构化参数","模糊需求","AI适合处理理解分析和生成","B端AI营销经营辅助产品","产品定位"]},
+      {q: "请完整讲述你为什么要做这个餐饮商户AI营销经营助手？按照6步递进结构回答。", kp: ["字节本地生活","入驻不等于经营","中小商户缺团队","连锁商户难批量","人工服务无法规模化","非结构化任务","结构化参数","模糊需求","AI适合处理理解分析和生成","B端AI营销经营辅助产品","产品定位"]},
       {q: "面试官追问「为什么需要AI而不是普通系统」，你怎么回答？", kp: ["普通系统","字段录入","流程管理","不能理解模糊表达","不能总结评价","不能理解参考图","不能生成多版本","价格底线","成本核算","事实字段","审核规则","结构化数据","规则控制"]},
       {q: "面试官追问「需求是不是真实需求，还是你看到大模型流行后强行找场景」，你怎么证明？", kp: ["不是看到大模型流行","持续服务商户","反复发现同类问题","日常高频任务","持续对接商户","设计优惠","处理流量和核销","协调产品市场技术"]},
       {q: "面试官追问「核心用户是商户还是内部运营」，你怎么回答？", kp: ["MVP阶段","内部商务和运营人员","商户是资料提供者","方案确认者","后续流程成熟","再开放部分自助能力","降低使用门槛","人工审核"]},
@@ -408,7 +415,7 @@ const QUIZ_DATA = {
     title: "三.6 产品运营、商户确认与数据复盘",
     questions: [
       {q: "内部推广最大的阻力是什么？怎么解决的？如何衡量推广是否成功？", kp: ["不愿改变工作方式","标准化工具","个性商户","真实案例","重复劳动","保留人工修改空间","项目创建量","实际使用率","生成内容采用率","平均修改轮次","持续使用情况"]},
-      {q: "数据复盘模块包含哪些指标？为什么需要同时记录其他营销变量？", kp: ["曝光","点击","下单","核销","退款","达人数量","直播场次","投流金额","内容版本","避免错误归因","A/B测试","对照组","不能全部归因于AI"]},
+      {q: "数据复盘模块包含哪些指标？为什么需要同时记录其他营销变量？", kp: ["曝光","点击","下单","核销","退款","达人数量","直播场次","投流金额","内容版本","避免错误归因","版本绑定","对照组","不能全部归因于AI"]},
       {q: "审核模块的三级机制是什么？审核通过后可以直接上线吗？", kp: ["通过","建议修改","禁止上线","阻断事实错误","价格错误","平台合规风险","审核通过不等于自动上线","仍需人工确认"]},
     ]
   },
@@ -417,7 +424,7 @@ const QUIZ_DATA = {
     questions: [
       {q: "请完整讲述四层业务成果，每个维度的关键数据和来源。", kp: ["生产效率","30分钟到10分钟","5轮降到2-3轮","内容质量","40%到85%","经营策略效率","5天到36小时","转化率19%","组织复用","SOP","50人团队"]},
       {q: "面试官追问「单版素材时间如何统计」，你怎么回答？", kp: ["需求基本确认后开始","候选素材为止","含提示词配置","生成","基础调整时间","不含商户等待时间","优化前后同类素材任务对比"]},
-      {q: "面试官追问「19%转化提升是不是因为投流」，你怎么回答？", kp: ["有可能","综合方案结果","套餐和视觉同步优化","不是独立贡献","需要记录达人","直播","投流资源变化","版本绑定","A/B测试","不能单因素归因"]},
+      {q: "面试官追问「19%转化提升是不是因为投流」，你怎么回答？", kp: ["有可能","综合方案结果","套餐和视觉同步优化","不是独立贡献","需要记录达人","直播","投流资源变化","综合方案结果","不能单因素归因"]},
       {q: "四个不足分别是什么？对商户和平台的直接价值？", kp: ["试点商户数量有限","方向验证不是大规模统计","竞品数据主要人工整理","自动数据接入未完成","质检以人工为主","自动质检属于产品规划","19%为综合结果"]},
     ]
   },
@@ -468,7 +475,7 @@ const QUIZ_DATA = {
     title: "字节经历：Prompt设计与内容评测",
     questions: [
       {q: "你在字节AI项目中最体现产品能力的部分是什么？Prompt设计怎么做的？", kp: ["Prompt设计与优化","发现食材失真","风格漂移","系统化测试","5类方案","三层Prompt","3版样片","可量化结果","不是写一段长指令","业务目标转换","稳定可复用","固定案例验收"]},
-      {q: "你的内容评测方法是什么？为什么模型生成结果不是最终指标？", kp: ["效率","生成时间","修改轮次","质量","事实准确","菜品还原","风格一致","内容通过率","业务","内容采用率","点击","下单","核销","不是最终指标","用户采用","审核通过","完成业务任务"]},
+      {q: "在字节AI项目中，你的Prompt设计优化过程如何体现产品思维（而非仅仅技术执行）？请结合具体案例说明。", kp: ["发现问题","食材失真","风格漂移","不是直接改Prompt","分类问题","真实性","视觉效果","品牌一致性","5类方案系统测试","三层Prompt结构","可复用方案","不是一次优化","固定案例验证","业务指标衡量","菜品还原合格率"]},
     ]
   },
   "r4b": {
@@ -511,7 +518,7 @@ const QUIZ_DATA = {
   "r8": {
     title: "AI及AIGC技能",
     questions: [
-      {q: "你怎么理解Prompt工程？什么是Few-shot？怎么选择模型和工具？", kp: ["业务目标转换","稳定可复用输入结构","角色任务","业务上下文","输入数据","输出格式","强约束","负向约束","Few-shot","少量高质量示例","帮助理解任务格式","先看任务","文案中文理解","视觉参考图理解","工作流节点编排","速度成本稳定性安全","不做排名","根据场景组合"]},
+      {q: "在简历面试中，如果面试官追问「你怎么理解Prompt工程」，请用你在餐饮项目中的实际做法来回答。", kp: ["业务目标转换成输入结构","角色任务","业务上下文","输入数据","输出格式","强约束","负向约束","Few-shot","三层结构","业务场景层","视觉风格层","真实性约束层","固定事实字段锁定","可生成字段","固定案例测试","验收指标","不是凭一次结果判断"]},
       {q: "Dify工作流你了解多少？AI评测你分哪三个层面？", kp: ["输入变量","Prompt节点","模型调用","条件分支","知识检索","工具节点","能力重点在产品方案层","效率","生成时间","修改轮次","质量","事实准确","菜品还原","风格一致","内容通过率","业务","内容采用率","点击下单核销"]},
     ]
   },
@@ -958,16 +965,12 @@ function isVoiceSupported() {
 
 function startVoice(targetId) {
   if (!isVoiceSupported()) return;
-  
-  // Stop any existing recognition
-  if (currentRecognition) {
-    currentRecognition.stop();
-  }
+  if (currentRecognition) { currentRecognition.stop(); }
   
   var recognition = new SpeechRecognition();
   recognition.lang = "zh-CN";
-  recognition.interimResults = true;
-  recognition.continuous = true;
+  recognition.interimResults = false;
+  recognition.continuous = false;
   recognition.maxAlternatives = 1;
   
   var target = document.getElementById(targetId);
@@ -976,28 +979,26 @@ function startVoice(targetId) {
   
   currentRecognition = recognition;
   currentVoiceTarget = targetId;
-  
   btn.classList.add("recording");
   
+  var hint = document.createElement("div");
+  hint.style.cssText = "position:absolute;background:#1e293b;color:#fff;padding:4px 10px;border-radius:4px;font-size:11px;z-index:999;pointer-events:none;opacity:.85;bottom:100%;left:0;margin-bottom:4px";
+  hint.textContent = "🎤 正在听...";
+  target.parentNode.style.position = "relative";
+  target.parentNode.appendChild(hint);
+  
   recognition.onresult = function(event) {
-    var transcript = "";
-    for (var i = event.resultIndex; i < event.results.length; i++) {
-      transcript += event.results[i][0].transcript;
+    var t = "";
+    for (var i = 0; i < event.results.length; i++) {
+      if (event.results[i].isFinal) { t += event.results[i][0].transcript; }
     }
-    // Append to existing text
-    if (event.results[event.results.length - 1].isFinal) {
-      target.value = (target.value ? target.value + " " : "") + transcript;
-    } else {
-      // Show interim result by temporarily adding it
-      var existing = target.value;
-      target.value = existing + transcript;
-      target.setSelectionRange(existing.length, existing.length + transcript.length);
-    }
+    if (t) { target.value = (target.value ? target.value + " " : "") + t.trim(); }
+    if (hint.parentNode) { hint.remove(); }
   };
   
   recognition.onerror = function(event) {
-    console.log("Voice error:", event.error);
     btn.classList.remove("recording");
+    if (hint.parentNode) { hint.remove(); }
     currentRecognition = null;
     currentVoiceTarget = null;
     
@@ -1012,6 +1013,7 @@ function startVoice(targetId) {
   
   recognition.onend = function() {
     btn.classList.remove("recording");
+    if (hint.parentNode) { hint.remove(); }
     currentRecognition = null;
     currentVoiceTarget = null;
   };
@@ -1575,6 +1577,25 @@ renderSprintDashboard = function() {
     checklist.parentNode.appendChild(div);
   }
 };
+
+
+function toggleSidebar() {
+  var sb = document.getElementById("study-sidebar-mob");
+  var arrow = document.getElementById("sidebar-arrow");
+  if (sb.classList.contains("collapsed")) {
+    sb.classList.remove("collapsed");
+    arrow.textContent = "▼";
+  } else {
+    sb.classList.add("collapsed");
+    arrow.textContent = "▶";
+  }
+}
+function collapseSidebar() {
+  var sb = document.getElementById("study-sidebar-mob");
+  var arrow = document.getElementById("sidebar-arrow");
+  sb.classList.add("collapsed");
+  arrow.textContent = "▶";
+}
 
 // ============ INIT ============
 switchPanel('study');
