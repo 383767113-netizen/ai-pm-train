@@ -245,6 +245,12 @@ body.no-scroll{overflow:hidden}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
       <span class="nav-label">自检</span>
     </button>
+    <button id="nav-sprint" onclick="switchPanel('sprint');renderSprintDashboard()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="nav-label">冲刺</span>
+    </button>
+    <button id="nav-flashcard" onclick="switchPanel('flashcard');showFlashcard()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="nav-label">闪卡</span>
+    </button>
     <button id="nav-progress" onclick="switchPanel('progress')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>
       <span class="nav-label">进度</span>
@@ -1343,16 +1349,7 @@ function resetSprint() {
 }
 
 // Add sprint nav button
-(function() {
-  var nav = document.querySelector(".topbar-nav");
-  if (nav && !document.getElementById("nav-sprint")) {
-    var btn = document.createElement("button");
-    btn.id = "nav-sprint";
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="nav-label">冲刺</span>';
-    btn.onclick = function() { switchPanel("sprint"); renderSprintDashboard(); };
-    nav.appendChild(btn);
-  }
-})();
+
 
 // Hook switchPanel to render sprint
 var _origSwitchPanel2 = switchPanel;
@@ -1500,16 +1497,7 @@ function resetFlashcards() {
 }
 
 // Add flashcard nav button
-(function() {
-  var nav = document.querySelector(".topbar-nav");
-  if (nav && !document.getElementById("nav-flashcard")) {
-    var btn = document.createElement("button");
-    btn.id = "nav-flashcard";
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span class="nav-label">闪卡</span>';
-    btn.onclick = function() { switchPanel("flashcard"); showFlashcard(); };
-    nav.appendChild(btn);
-  }
-})();
+
 
 // ============ DAILY RANDOM REVIEW ============
 function startRandomReview() {
